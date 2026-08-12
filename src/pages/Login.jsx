@@ -1,69 +1,168 @@
 import { useState } from "react";
 import api from "../api/api";
+import "./Login.css";
 
 function Login({ onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleLogin = async (e) => {
     e.preventDefault();
 
+    setError("");
+
+    if (!email || !password) {
+      setError("Please enter your email and password.");
+      return;
+    }
+
     try {
+      setLoading(true);
+
       const response = await api.post("/auth/login", {
         email,
         password,
       });
 
+      // Save JWT
       localStorage.setItem("token", response.data.token);
 
-      alert("Login Successful!");
+      // Get logged-in user details
+      const userResponse = await api.get("/user/me", {
+        headers: {
+          Authorization: `Bearer ${response.data.token}`,
+        },
+      });
+
+      // Save role and name
+      localStorage.setItem("role", userResponse.data.role);
+      localStorage.setItem("name", userResponse.data.name);
 
       onLogin();
 
     } catch (error) {
-      alert("Invalid Email or Password");
+      console.error(error);
+
+      // Remove token if login/user request fails
+      localStorage.removeItem("token");
+
+      setError("Invalid email or password.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div
-      style={{
-        width: "350px",
-        margin: "100px auto",
-        padding: "20px",
-        border: "1px solid #ccc",
-        borderRadius: "10px",
-      }}
-    >
-      <h2>Login</h2>
+    <div className="login-page">
 
-      <form onSubmit={handleLogin}>
-        <input
-          type="email"
-          placeholder="Enter Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{ width: "100%", marginBottom: "10px", padding: "10px" }}
-        />
+      <div className="login-background">
+        <div className="glow glow-one"></div>
+        <div className="glow glow-two"></div>
+      </div>
 
-        <input
-          type="password"
-          placeholder="Enter Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{ width: "100%", marginBottom: "10px", padding: "10px" }}
-        />
+      <div className="login-card">
 
-        <button
-          type="submit"
-          style={{
-            width: "100%",
-            padding: "10px",
-          }}
-        >
-          Login
-        </button>
-      </form>
+        <div className="login-brand">
+          <div className="brand-icon">
+            ✦
+          </div>
+
+          <div>
+            <h1>PostFlow</h1>
+            <p>Social Media Management</p>
+          </div>
+        </div>
+
+        <div className="login-header">
+          <h2>Welcome back 👋</h2>
+          <p>Sign in to manage your posts and schedule content.</p>
+        </div>
+
+        <form onSubmit={handleLogin} className="login-form">
+
+          <div className="input-group">
+            <label htmlFor="email">Email Address</label>
+
+            <div className="input-wrapper">
+              <span className="input-icon">✉</span>
+
+              <input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+              />
+            </div>
+          </div>
+
+          <div className="input-group">
+            <label htmlFor="password">Password</label>
+
+            <div className="input-wrapper">
+              <span className="input-icon">🔒</span>
+
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+              />
+
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={
+                  showPassword
+                    ? "Hide password"
+                    : "Show password"
+                }
+              >
+                {showPassword ? "🙈" : "👁"}
+              </button>
+            </div>
+          </div>
+
+          {error && (
+            <div className="login-error">
+              <span>⚠</span>
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            className="login-button"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <span className="spinner"></span>
+                Signing in...
+              </>
+            ) : (
+              <>
+                Sign In
+                <span className="arrow">→</span>
+              </>
+            )}
+          </button>
+
+        </form>
+
+        <div className="login-footer">
+          <span>Secure access powered by</span>
+          <strong>JWT Authentication</strong>
+        </div>
+
+      </div>
     </div>
   );
 }

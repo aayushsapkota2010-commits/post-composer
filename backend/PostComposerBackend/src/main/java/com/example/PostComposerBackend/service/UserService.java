@@ -22,14 +22,14 @@ public class UserService {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-private AuthenticationManager authenticationManager;
+    private AuthenticationManager authenticationManager;
 
-@Autowired
-private JwtService jwtService;
+    @Autowired
+    private JwtService jwtService;
 
     public String register(RegisterRequest request) {
 
-        if(repository.findByEmail(request.getEmail()).isPresent()){
+        if (repository.findByEmail(request.getEmail()).isPresent()) {
             return "Email already exists";
         }
 
@@ -37,6 +37,7 @@ private JwtService jwtService;
 
         user.setName(request.getName());
         user.setEmail(request.getEmail());
+        user.setRole("USER");
 
         // Password will be stored encrypted
         user.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -48,15 +49,13 @@ private JwtService jwtService;
 
     public AuthResponse login(LoginRequest request) {
 
-    authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(
-                    request.getEmail(),
-                    request.getPassword()
-            )
-    );
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getEmail(),
+                        request.getPassword()));
 
-    String token = jwtService.generateToken(request.getEmail());
+        String token = jwtService.generateToken(request.getEmail());
 
-    return new AuthResponse(token);
-}
+        return new AuthResponse(token);
+    }
 }

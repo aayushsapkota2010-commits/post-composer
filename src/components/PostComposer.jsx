@@ -57,8 +57,11 @@ const generateId = () =>
   typeof crypto !== "undefined" && crypto.randomUUID
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-
-function PostComposer({ setLoggedIn }) {
+function PostComposer({
+  setLoggedIn,
+  selectedPost,
+  clearSelectedPost
+}) {
   const [text, setText] = useState(() => loadDraft().text || "");
   const [mediaFiles, setMediaFiles] = useState(() => loadDraft().mediaFiles || []);
   const [scheduleTime, setScheduleTime] = useState(() => loadDraft().scheduleTime || "");
@@ -77,6 +80,7 @@ const [createdAt, setCreatedAt] = useState(
     (state) => state.platforms.selectedPlatforms
   );
   const [editId, setEditId] = useState(null);
+  const role = localStorage.getItem("role");
      const logout = () => {
 
     localStorage.removeItem("token");
@@ -87,13 +91,39 @@ const [createdAt, setCreatedAt] = useState(
 
 
 
-  useEffect(() => {
-    const draft = { text, platforms, mediaFiles, scheduleTime };
-    localStorage.setItem("postData", JSON.stringify(draft));
-  }, [text, platforms, mediaFiles, scheduleTime]);
+useEffect(() => {
+  try {
+    localStorage.setItem(
+      "postData",
+      JSON.stringify({
+        text,
+        platforms,
+        scheduleTime,
+      })
+    );
+  } catch (error) {
+    console.error("Could not save draft:", error);
+  }
+}, [text, platforms, scheduleTime]);
+
+
+useEffect(() => {
+
+  if (!selectedPost) return;
+
+  setText(selectedPost.text || "");
+  setMediaFiles(selectedPost.mediaFiles || []);
+  setScheduleTime(selectedPost.scheduleTime || "");
+  setEditId(selectedPost.id);
+
+}, [selectedPost]);
+
+
   useEffect(() => {
     localStorage.setItem("posts", JSON.stringify(posts));
 }, [posts]);
+
+
 
   const editPost = (post) => {
     setEditId(post.id);
@@ -126,10 +156,15 @@ const [createdAt, setCreatedAt] = useState(
     "LinkedIn",
   ];
 
-  const handleDeletePost = (id) => {
-    dispatch(deletePost(id));
-    setEditId((currentEditId) => (currentEditId === id ? null : currentEditId));
-  };
+const handleDeletePost = (id) => {
+  dispatch(deletePost(id));
+
+  setEditId((currentEditId) =>
+    currentEditId === id ? null : currentEditId
+  );
+
+  clearSelectedPost();
+};
 
   const handlePlatformChange = (platform) => {
 
@@ -216,7 +251,13 @@ const [createdAt, setCreatedAt] = useState(
       return;
     }
 
-   
+   const logout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("name");
+
+    setLoggedIn(false);
+};
 
     const now = new Date().toLocaleString();
     if (editId !== null) {
@@ -231,8 +272,10 @@ const [createdAt, setCreatedAt] = useState(
       };
 
       dispatch(updatePost(updatedPost));
+      
 
       setEditId(null);
+      clearSelectedPost();
 
       alert("Post Updated Successfully!");
     } else {
@@ -269,9 +312,24 @@ const [createdAt, setCreatedAt] = useState(
     Compose once, preview live, and publish across every platform.
   </p>
 
-  <button className="logout-btn" onClick={logout}>
+ <div
+  style={{
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "20px",
+  }}
+>
+  <h3>
+    Welcome {localStorage.getItem("name")} ({role})
+  </h3>
+
+  <button
+    onClick={logout}
+  >
     Logout
   </button>
+</div>
 </header>
 
       <div className="dashboard-grid">
@@ -395,7 +453,25 @@ const [createdAt, setCreatedAt] = useState(
           >
             <IconSend /> Publish
           </button>
+{editId !== null && (
+  <button
+    type="button"
+    onClick={() => {
+      setEditId(null);
+      clearSelectedPost();
 
+      setText("");
+      setMediaFiles([]);
+      setScheduleTime("");
+      setCreatedAt("");
+      setUpdatedAt("");
+
+      dispatch(setPlatforms([]));
+    }}
+  >
+    Cancel Edit
+  </button>
+)}
           {text.length > 0 &&
             remaining >= 0 &&
             platforms.length > 0 && (
@@ -497,13 +573,23 @@ const [createdAt, setCreatedAt] = useState(
                 </div>
 
                 <div className="post-actions">
-                  <button className="update-btn" onClick={() => editPost(post)}>
-                    <IconEdit /> Update
-                  </button>
+                  {role === "ADMIN" && (
+  <button
+    className="update-btn"
+    onClick={() => editPost(post)}
+  >
+    <IconEdit /> Update
+  </button>
+)}
 
-                  <button className="delete-btn" onClick={() => handleDeletePost(post.id)}>
-                    <IconTrash /> Delete
-                  </button>
+                  {role === "ADMIN" && (
+                    <button
+                      className="delete-btn"
+                      onClick={() => handleDeletePost(post.id)}
+                    >
+                      <IconTrash /> Delete
+                    </button>
+                  )}
                 </div>
 
               </div>
