@@ -28,7 +28,7 @@ describe("PostComposer Component", () => {
     );
 
     expect(
-      screen.getByText(/post composer/i)
+      screen.getByText(/post composer/i)      //screen provides method to find the element which is currently rendered
     ).toBeInTheDocument();
 
   });

@@ -3,6 +3,39 @@ import "./PostComposer.css";
 import { useSelector, useDispatch } from "react-redux";
 import { addPost, deletePost, updatePost } from "../features/posts/postSlice";
 import { setPlatforms } from "../features/platforms/platformSlice";
+import type { ChangeEvent } from "react";
+
+type MediaFile = {
+  name: string;
+  type: string;
+  size: number;
+  data: string;
+};
+
+type Post = {
+  id: string;
+  text: string;
+  platforms: string[];
+  mediaFiles: MediaFile[];
+  scheduleTime: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type PostComposerProps = {
+  setLoggedIn: React.Dispatch<React.SetStateAction<boolean>>;
+  selectedPost?: Post | null;
+  clearSelectedPost: () => void;
+};
+
+type RootState = {
+  posts: {
+    posts: Post[];
+  };
+  platforms: {
+    selectedPlatforms: string[];
+  };
+};
 
 const IconUpload = () => (
   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -60,26 +93,37 @@ const generateId = () =>
 function PostComposer({
   setLoggedIn,
   selectedPost,
-  clearSelectedPost
-}) {
-  const [text, setText] = useState(() => loadDraft().text || "");
-  const [mediaFiles, setMediaFiles] = useState(() => loadDraft().mediaFiles || []);
-  const [scheduleTime, setScheduleTime] = useState(() => loadDraft().scheduleTime || "");
-
-const [createdAt, setCreatedAt] = useState(
-    new Date().toLocaleString()
+  clearSelectedPost,
+}: PostComposerProps) {
+const [text, setText] = useState<string>(
+  () => loadDraft().text || ""
 );
-  const [updatedAt, setUpdatedAt] = useState("");
+
+
+const [mediaFiles, setMediaFiles] = useState<MediaFile[]>(
+  () => loadDraft().mediaFiles || []
+);
+const [scheduleTime, setScheduleTime] = useState<string>(
+  () => loadDraft().scheduleTime || ""
+);
+
+const [createdAt, setCreatedAt] = useState<string>(
+  new Date().toLocaleString()
+);
+
+  const [updatedAt, setUpdatedAt] = useState<string>("");
 
   const dispatch = useDispatch();  //sends an action to redux store
 
-  const posts = useSelector((state) => state.posts.posts); //redux
+const posts = useSelector(
+  (state: RootState) => state.posts.posts
+); //redux
   console.log("Redux Posts:", posts);
 
-  const platforms = useSelector(
-    (state) => state.platforms.selectedPlatforms
-  );
-  const [editId, setEditId] = useState(null);
+const platforms = useSelector(
+  (state: RootState) => state.platforms.selectedPlatforms
+);
+const [editId, setEditId] = useState<string | null>(null);
   const role = localStorage.getItem("role");
      const logout = () => {
 
@@ -125,7 +169,7 @@ useEffect(() => {
 
 
 
-  const editPost = (post) => {
+  const editPost = (post: Post) => {
     setEditId(post.id);
     setText(post.text);
     dispatch(setPlatforms(post.platforms));
@@ -141,8 +185,7 @@ useEffect(() => {
         dispatch(setPlatforms(draft.platforms));
     }
 }, []);
-
-  const limits = {
+const limits: Record<string, number> = {
     Twitter: 280,
     Facebook: 63206,
     Instagram: 2200,
@@ -156,7 +199,7 @@ useEffect(() => {
     "LinkedIn",
   ];
 
-const handleDeletePost = (id) => {
+const handleDeletePost = (id: string) => {
   dispatch(deletePost(id));
 
   setEditId((currentEditId) =>
@@ -166,12 +209,15 @@ const handleDeletePost = (id) => {
   clearSelectedPost();
 };
 
-  const handlePlatformChange = (platform) => {
+const handlePlatformChange = (platform: string) => {
 
     let updatedPlatforms;
 
     if (platforms.includes(platform)) {
-      updatedPlatforms = platforms.filter((p) => p !== platform);
+   updatedPlatforms = platforms.filter(
+  (p: string) => p !== platform
+);
+
     } else {
       updatedPlatforms = [...platforms, platform];
     }
@@ -179,8 +225,10 @@ const handleDeletePost = (id) => {
     dispatch(setPlatforms(updatedPlatforms));
   };
 
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
+const handleFileChange = (
+  e: ChangeEvent<HTMLInputElement>
+) => {
+const files = Array.from(e.target.files || []);
 
     // Max files
     if (files.length > 5) {
@@ -216,22 +264,26 @@ const handleDeletePost = (id) => {
       return;
     }
 
-    const promises = files.map((file) => {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
+  const promises = files.map((file): Promise<MediaFile> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
 
-        reader.onload = () => {
-          resolve({
-            name: file.name,
-            type: file.type,
-            size: file.size,
-            data: reader.result,
-          });
-        };
-
-        reader.readAsDataURL(file);
+    reader.onload = () => {
+      resolve({
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        data: reader.result as string,
       });
-    });
+    };
+
+    reader.readAsDataURL(file);
+  });
+});
+
+Promise.all(promises).then((result: MediaFile[]) => {
+  setMediaFiles(result);
+});
 
     Promise.all(promises).then((result) => {
       setMediaFiles(result);

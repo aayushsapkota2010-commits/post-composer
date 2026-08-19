@@ -15,7 +15,7 @@ const postSlice = createSlice({
     addPost: (state, action) => {
       state.posts.push(action.payload);
 
-      localStorage.setItem(
+      localStorage.setItem( 
         "posts",
         JSON.stringify(state.posts)
       );

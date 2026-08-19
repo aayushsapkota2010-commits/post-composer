@@ -1,18 +1,47 @@
 import React, { useMemo } from "react";
 import { useSelector,useDispatch } from "react-redux";
 import { updatePost } from "../features/posts/postSlice";
-
+import type { EventClickArg, EventDropArg } from "@fullcalendar/core";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import "./CalendarView.css";
 
-function CalendarView({ onPostSelect }) {
+type MediaFile = {
+  name: string;
+  type: string;
+  size: number;
+  data: string;
+};
+
+type Post = {
+  id: string;
+  text: string;
+  platforms: string[];
+  mediaFiles: MediaFile[];
+  scheduleTime: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type CalendarViewProps = {
+  onPostSelect: (post: Post) => void;
+};
+
+type RootState = {
+  posts: {
+    posts: Post[];
+  };
+};
+
+function CalendarView({ onPostSelect }: CalendarViewProps) {
 
     const role = localStorage.getItem("role");
 
-  const posts = useSelector((state) => state.posts.posts);
+const posts = useSelector(
+  (state: RootState) => state.posts.posts
+);
   const scheduledPosts = posts.filter(
   (post) => post.scheduleTime
 );
@@ -34,7 +63,7 @@ const events = useMemo(() => {
     }));
 }, [posts]);
 
-const handleEventClick = (info) => {
+const handleEventClick = (info: EventClickArg) => {
   const post = posts.find(
     (post) => post.id === info.event.id
   );
@@ -45,7 +74,7 @@ const handleEventClick = (info) => {
 };
 
 
-const handleEventDrop = (info) => {
+const handleEventDrop = (info: EventDropArg) => {
 
   if (role !== "ADMIN") {
     info.revert();
@@ -57,6 +86,7 @@ const handleEventDrop = (info) => {
   );
 
   if (!post) return;
+  if (!info.event.start) return;
 
   const newScheduleTime =
     info.event.start.toISOString();

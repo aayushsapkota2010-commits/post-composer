@@ -2,14 +2,29 @@ import { useState } from "react";
 import api from "../api/api";
 import "./Login.css";
 
-function Login({ onLogin }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+interface LoginProps {
+  onLogin: () => void;
+}
 
-  const handleLogin = async (e) => {
+interface LoginResponse {
+  token: string;
+}
+
+interface UserResponse {
+  role: string;
+  name: string;
+}
+
+function Login({ onLogin }: LoginProps) {
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+
+  const handleLogin = async (
+    e: React.FormEvent<HTMLFormElement>
+  ): Promise<void> => {
     e.preventDefault();
 
     setError("");
@@ -22,7 +37,7 @@ function Login({ onLogin }) {
     try {
       setLoading(true);
 
-      const response = await api.post("/auth/login", {
+      const response = await api.post<LoginResponse>("/auth/login", {
         email,
         password,
       });
@@ -31,7 +46,7 @@ function Login({ onLogin }) {
       localStorage.setItem("token", response.data.token);
 
       // Get logged-in user details
-      const userResponse = await api.get("/user/me", {
+      const userResponse = await api.get<UserResponse>("/user/me", {
         headers: {
           Authorization: `Bearer ${response.data.token}`,
         },
@@ -42,8 +57,7 @@ function Login({ onLogin }) {
       localStorage.setItem("name", userResponse.data.name);
 
       onLogin();
-
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(error);
 
       // Remove token if login/user request fails
@@ -78,7 +92,9 @@ function Login({ onLogin }) {
 
         <div className="login-header">
           <h2>Welcome back 👋</h2>
-          <p>Sign in to manage your posts and schedule content.</p>
+          <p>
+            Sign in to manage your posts and schedule content.
+          </p>
         </div>
 
         <form onSubmit={handleLogin} className="login-form">
