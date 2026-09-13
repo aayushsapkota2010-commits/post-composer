@@ -20,12 +20,21 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import com.example.PostComposerBackend.filter.CorrelationIdFilter;
 
+import com.example.PostComposerBackend.filter.RequestLoggingFilter;
 @Configuration
 public class SecurityConfig {
 
+  
     @Autowired
     private JwtAuthenticationFilter jwtFilter;
+
+      @Autowired
+private CorrelationIdFilter correlationIdFilter;
+
+@Autowired
+private RequestLoggingFilter requestLoggingFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -62,8 +71,12 @@ public class SecurityConfig {
         .anyRequest().authenticated()
 )
 
-                .addFilterBefore(jwtFilter,
-                        UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(correlationIdFilter,
+        UsernamePasswordAuthenticationFilter.class)
+.addFilterBefore(requestLoggingFilter,
+        UsernamePasswordAuthenticationFilter.class)
+.addFilterBefore(jwtFilter,
+        UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

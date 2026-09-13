@@ -11,8 +11,14 @@ interface LoginResponse {
 }
 
 interface UserResponse {
-  role: string;
   name: string;
+  role: string;
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
 }
 
 function Login({ onLogin }: LoginProps) {
@@ -46,15 +52,18 @@ function Login({ onLogin }: LoginProps) {
       localStorage.setItem("token", response.data.token);
 
       // Get logged-in user details
-      const userResponse = await api.get<UserResponse>("/user/me", {
-        headers: {
-          Authorization: `Bearer ${response.data.token}`,
-        },
-      });
+  const userResponse = await api.get<ApiResponse<UserResponse>>(
+  "/user/me",
+  {
+    headers: {
+      Authorization: `Bearer ${response.data.token}`,
+    },
+  }
+);
 
-      // Save role and name
-      localStorage.setItem("role", userResponse.data.role);
-      localStorage.setItem("name", userResponse.data.name);
+// Save role and name
+localStorage.setItem("role", userResponse.data.data.role);
+localStorage.setItem("name", userResponse.data.data.name);
 
       onLogin();
     } catch (error: unknown) {
